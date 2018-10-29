@@ -1,16 +1,53 @@
 import React, { Component } from 'react';
-import logo from './logo.svg';
-import './App.css';
+import axios from 'axios';
 
 class App extends Component {
 
   state = {
     currentTab: 'lists',
-    typeLists: 'all'
+    typeLists: 'all',
+    todos: []
   };
 
+  componentDidMount(){
+    this.queryTodos();
+  }
+
+  queryTodos(){
+    var path = 'http://localhost:3000/todos';
+    if(this.state.typeLists !== 'all'){ path = path+`/${this.state.typeLists}`; }
+    axios.get(path)
+      .then(response =>{
+        this.populateTodos(response.data);
+        console.log(JSON.stringify(response.data));
+      })
+      .catch(error =>{
+        console.log(error);
+      })
+  }
+
+  markDone(id){
+    axios.put('http://localhost:3000/todos/markDone', {
+      id,
+      done: true
+    })
+      .then(response =>{
+        alert("Todo Finalizado com sucesso!");
+        this.queryTodos();
+      })
+      .catch(error =>{
+        console.log(error);
+      });
+  }
+
+  populateTodos(todos){
+    this.setState({ todos });
+  }
+
   changeTabs(currentTab, typeLists){
-    this.setState({ currentTab,typeLists });
+    this.setState({ currentTab,typeLists }, () => {
+      if(this.state.currentTab !== "add"){ this.queryTodos() }
+    });
   }
 
   render() {
@@ -27,7 +64,7 @@ class App extends Component {
               <div className="collapse navbar-collapse" id="navbarNavAltMarkup">
                 <div className="navbar-nav">
                   <a className="nav-item nav-link" onClick={() => this.changeTabs('lists','all')}>Todos</a>
-                  <a className="nav-item nav-link" onClick={() => this.changeTabs('lists','todo')}>Em andamento</a>
+                  <a className="nav-item nav-link" onClick={() => this.changeTabs('lists','pending')}>Em andamento</a>
                   <a className="nav-item nav-link" onClick={() => this.changeTabs('lists','done')}>Finalizados</a>
                   <a className="nav-item nav-link" onClick={() => this.changeTabs('add', null)}>Criar novo</a>
                 </div>
@@ -46,8 +83,10 @@ class App extends Component {
           <div className="row">
             <div className="col-sm">
               <ul className="list-group">
-                <li className="list-group-item">Dapibus ac facilisis in</li>
-                <li className="list-group-item list-group-item-success">This is a success list group item</li>
+                {this.state.todos.map((item) => (
+                  <li className={item.done ? "list-group-item list-group-item-success" : "list-group-item"}><b>{item.description}</b> <p>{item.owner.name} - {item.owner.job_title}</p>{!item.done && (<button type="button" class="btn btn-outline-success float-right" onClick={() => this.markDone(item._id)}>Finalizar</button>)}</li>
+                ))
+                }
               </ul>
             </div>
           </div>
