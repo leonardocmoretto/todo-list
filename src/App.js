@@ -1,12 +1,17 @@
 import React, { Component } from 'react';
 import axios from 'axios';
 
+const endPoint = 'http://localhost:3000/';
+
 class App extends Component {
 
   state = {
     currentTab: 'lists',
     typeLists: 'all',
-    todos: []
+    todos: [],
+    fieldName: '',
+    fieldJob: '',
+    fieldDescription: ''
   };
 
   componentDidMount(){
@@ -14,11 +19,11 @@ class App extends Component {
   }
 
   queryTodos(){
-    var path = 'http://localhost:3000/todos';
+    var path = `${endPoint}todos`;
     if(this.state.typeLists !== 'all'){ path = path+`/${this.state.typeLists}`; }
     axios.get(path)
       .then(response =>{
-        this.populateTodos(response.data);
+        this.populateTodos(response.data.reverse());
         console.log(JSON.stringify(response.data));
       })
       .catch(error =>{
@@ -27,13 +32,32 @@ class App extends Component {
   }
 
   markDone(id){
-    axios.put('http://localhost:3000/todos/markDone', {
+    axios.put(`${endPoint}todos/markDone`, {
       id,
       done: true
     })
       .then(response =>{
         alert("Todo Finalizado com sucesso!");
         this.queryTodos();
+      })
+      .catch(error =>{
+        console.log(error);
+      });
+  }
+
+  createTodo(){
+    if(this.state.fieldName === '' || this.state.fieldJob === '' || this.state.fieldDescription === ''){
+      alert("Você precisa preencher todos os campos");
+      return;
+    }
+    axios.post(`${endPoint}todos`, {
+      description: this.state.fieldDescription,
+      owner: {name:this.state.fieldName, job_title:this.state.fieldJob}
+    })
+      .then(response =>{
+        this.setState({ fieldName:'', fieldJob:'', fieldDescription:'', currentTab: 'lists', typeLists: 'all' }, () => {
+          this.queryTodos();
+        });
       })
       .catch(error =>{
         console.log(error);
@@ -49,6 +73,12 @@ class App extends Component {
       if(this.state.currentTab !== "add"){ this.queryTodos() }
     });
   }
+
+  handleChange = name => event => {
+    this.setState({
+      [name]: event.target.value,
+    });
+  };
 
   render() {
     return (
@@ -97,32 +127,19 @@ class App extends Component {
             <div className="col-sm">
               <form>
                 <div className="form-group">
-                  <label htmlFor="exampleFormControlInput1">Email address</label>
-                  <input type="email" class="form-control" id="exampleFormControlInput1" placeholder="name@example.com"/>
+                  <label htmlFor="exampleFormControlInput1">Descricao</label>
+                  <input type="text" class="form-control" placeholder="Ex: Fazer deploy" value={this.state.fieldDescription} onChange={this.handleChange('fieldDescription')}/>
                 </div>
                 <div className="form-group">
-                  <label htmlFor="exampleFormControlSelect1">Example select</label>
-                  <select className="form-control" id="exampleFormControlSelect1">
-                    <option>1</option>
-                    <option>2</option>
-                    <option>3</option>
-                    <option>4</option>
-                    <option>5</option>
-                  </select>
+                  <label htmlFor="exampleFormControlInput2">Nome:</label>
+                  <input type="text" class="form-control" placeholder="Ex: Leo Cunha" value={this.state.fieldName} onChange={this.handleChange('fieldName')}/>
                 </div>
                 <div className="form-group">
-                  <label htmlFor="exampleFormControlSelect2">Example multiple select</label>
-                  <select multiple className="form-control" id="exampleFormControlSelect2">
-                    <option>1</option>
-                    <option>2</option>
-                    <option>3</option>
-                    <option>4</option>
-                    <option>5</option>
-                  </select>
+                  <label htmlFor="exampleFormControlInput1">Cargo:</label>
+                  <input type="text" class="form-control" placeholder="Ex: FullStack" value={this.state.fieldJob} onChange={this.handleChange('fieldJob')}/>
                 </div>
                 <div className="form-group">
-                  <label htmlFor="exampleFormControlTextarea1">Example textarea</label>
-                  <textarea className="form-control" id="exampleFormControlTextarea1" rows="3"></textarea>
+                  <input class="btn btn-primary" type="button" value="Criar Todo" onClick={() => this.createTodo()}/>
                 </div>
               </form>
             </div>
